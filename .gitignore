@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Personal Claude Code config (contains absolute paths, personal info)
+# Note: .claude/mcp.json IS committed (portable, enables plug-and-play)
+.claude/settings.local.json
+.claude/harness-state.json
+.claude/continue.flag
+.claude/stop.flag
+.claude/pending-command.txt
+.claude/vcs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs and temp
+*.log
+tmp/
+temp/
+
+# Harness recovery / project-local state (contains absolute paths)
+RESUME.md
+
+# Test debris (auto-generated debug files)
+debug-test*.mjs
+
+# Test coverage
+coverage/
+
+# Internal development artifacts (not for public release)
+dev-plan.md
+harness-spec.md
+lessons-learned.md
+main-log.md
+TODO.md

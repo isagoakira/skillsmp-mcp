@@ -1,0 +1,42 @@
+<evaluation>
+  <qa_pair>
+    <question>Search for skills related to code review in the SkillsMP marketplace. Among the results, find a skill that helps with pull request review automation. What is the full package identifier of that skill (e.g., 'owner/repo@skill-name')?</question>
+    <answer>vercel-labs/agent-skills@pr-review</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Search for skills related to React testing in the marketplace. How many distinct skill packages appear in the search results? Count only top-level packages, not individual skills within a package.</question>
+    <answer>5</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Use list_package_skills to inspect the 'vercel-labs/agent-skills' package without installing it. How many individual skills are available in this package?</question>
+    <answer>6</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Search for skills related to documentation generation in the marketplace. Find a skill that helps with writing technical documentation or API docs. What is the exact name of that skill?</question>
+    <answer>doc-coauthoring</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Use list_package_skills on 'vercel-labs/agent-skills'. Which skill in the package is designed for creating MCP (Model Context Protocol) servers? Provide the exact skill name.</question>
+    <answer>mcp-builder</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Search for skills related to CSS or frontend design in the marketplace. Find a skill that helps with creating beautiful visual designs or interfaces. What is the exact name of that skill?</question>
+    <answer>frontend-design</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Search for skills related to data visualization or creating charts and diagrams. Among the results, find a skill specifically for creating diagrams. What is the exact name of that skill?</question>
+    <answer>diagram-design</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Use list_package_skills to inspect 'vercel-labs/agent-skills'. Which skill in this package is designed for creating PDF files? Provide the exact skill name.</question>
+    <answer>pdf</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Search for skills related to Excel or spreadsheet processing. Find a skill that handles .xlsx files. What is the exact name of that skill?</question>
+    <answer>xlsx</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Search for skills related to security or penetration testing. Find a skill designed for conducting security reviews of code changes. What is the exact name of that skill?</question>
+    <answer>security-review</answer>
+  </qa_pair>
+</evaluation>

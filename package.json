@@ -1,0 +1,47 @@
+{
+  "name": "skillsmp-mcp",
+  "version": "1.0.0",
+  "description": "Plug-and-play MCP server for searching and installing skills from SkillsMP marketplace (700K+ open-source skills)",
+  "keywords": [
+    "mcp",
+    "skillsmp",
+    "skills",
+    "claude-code",
+    "mcp-server",
+    "agent-skills",
+    "claude"
+  ],
+  "homepage": "https://skillsmp.com",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "skillsmp-mcp": "./index.js",
+    "skillsmp-setup": "./setup.js"
+  },
+  "files": [
+    "index.js",
+    "setup.js"
+  ],
+  "scripts": {
+    "start": "node index.js",
+    "setup": "node setup.js",
+    "setup:local": "node setup.js --local",
+    "setup:global": "node setup.js --global",
+    "setup:all": "node setup.js --all",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "node setup.js --test",
+    "inspect": "npx @modelcontextprotocol/inspector node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.5"
+  }
+}

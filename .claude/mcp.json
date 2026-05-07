@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "skillsmp": {
+      "command": "node",
+      "args": ["index.js"],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "search_skills",
+        "list_installed_skills",
+        "list_package_skills"
+      ]
+    }
+  }
+}

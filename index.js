@@ -39,17 +39,16 @@ function checkDependencies() {
     });
     if (result.error || result.status !== 0) {
       console.error(
-        "ERROR: 'npx skills' CLI is not available.\n" +
+        "WARNING: 'npx skills' CLI is not available.\n" +
         "  Install it with: npm install -g skillsmp-cli\n" +
         "  Or via npx: npx skills --help\n" +
-        "  The skillsmp-mcp server requires this CLI to function."
+        "  SkillsMP MCP tools will return errors until the CLI is installed."
       );
-      process.exit(1);
+      return;
     }
     console.error(`skillsmp-mcp using: npx skills ${(result.stdout || "").trim()}`);
   } catch (err) {
-    console.error("ERROR: Failed to check 'npx skills' dependency:", err.message);
-    process.exit(1);
+    console.error("WARNING: Failed to check 'npx skills' dependency:", err.message);
   }
 }
 

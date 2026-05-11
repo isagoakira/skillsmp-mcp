@@ -32,14 +32,18 @@ All tools follow the `{action}_{resource}` naming pattern:
 
 - **Runtime**: Node.js >= 18, stdio transport
 - **Framework**: `@modelcontextprotocol/sdk` v1.x (`Server` + `setRequestHandler`)
-- **Underlying CLI**: `npx skills` (SkillsMP CLI)
-- **Security**: Uses `spawnSync` with arg arrays (no shell injection), no `shell: true`
+- **Self-contained**: No external CLI dependency — all skill management logic is inline
+- **Registry**: Searches npm registry API (`fetch`), resolves GitHub repos via GitHub API
+- **Storage**: `~/.skillsmp/` (global) or `.skillsmp/` (project) with JSON manifest
 - **Error handling**: Returns `{ isError: true, content: [...] }` per MCP protocol
 
 ## Code Structure
 
 - `index.js` — MCP server entry point: tool definitions, handlers, tool annotations
 - `setup.js` — Registration script: writes `.claude/mcp.json` (local/global/both)
+- `src/registry.js` — npm registry search, package info, GitHub API integration
+- `src/installer.js` — Skill install/remove/update lifecycle, manifest management
+- `src/state.js` — Storage paths and manifest read/write helpers
 - `tests/` — Unit and integration tests via Vitest
   - `tests/unit/setup.test.js` — Source-level config verification
   - `tests/integration/server.test.js` — Live server testing via stdio JSON-RPC
@@ -50,7 +54,7 @@ All tools follow the `{action}_{resource}` naming pattern:
 - Tool names use `snake_case`: `search_skills`, `install_skill`
 - Error responses use `isError: true` flag (not thrown exceptions for tool-level errors)
 - Tool annotations follow MCP best practices (`readOnlyHint`, `destructiveHint`, etc.)
-- `npx skills` availability is verified at startup via `checkDependencies()`
+- Network tools are async; filesystem tools are synchronous
 
 ## Testing
 

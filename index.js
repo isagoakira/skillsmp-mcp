@@ -2,7 +2,9 @@
 
 /**
  * skillsmp-mcp — MCP server for searching and installing skills
- * from the SkillsMP marketplace via the `npx skills` CLI.
+ * from the SkillsMP marketplace.
+ *
+ * All skill management logic is self-contained — no external CLI dependency.
  *
  * Tools:
  *   - search_skills          Search marketplace by keyword
@@ -21,76 +23,20 @@ import {
   ErrorCode,
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
-import { spawnSync } from "node:child_process";
-import { platform } from "node:os";
 
-const IS_WINDOWS = platform() === "win32";
-
-// ---------------------------------------------------------------------------
-// Startup health check
-// ---------------------------------------------------------------------------
-
-function checkDependencies() {
-  try {
-    const result = spawnSync("npx", ["skills", "--version"], {
-      encoding: "utf-8",
-      timeout: 15_000,
-      shell: IS_WINDOWS,
-    });
-    if (result.error || result.status !== 0) {
-      console.error(
-        "WARNING: 'npx skills' CLI is not available.\n" +
-        "  Install it with: npm install -g skillsmp-cli\n" +
-        "  Or via npx: npx skills --help\n" +
-        "  SkillsMP MCP tools will return errors until the CLI is installed."
-      );
-      return;
-    }
-    console.error(`skillsmp-mcp using: npx skills ${(result.stdout || "").trim()}`);
-  } catch (err) {
-    console.error("WARNING: Failed to check 'npx skills' dependency:", err.message);
-  }
-}
+import { search, listPackageSkills } from "./src/registry.js";
+import { install, remove, update, listInstalled } from "./src/installer.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Run `npx skills …` and return { stdout, stderr, exitCode }.
- * Uses spawnSync with an argument array to avoid shell injection.
- */
-function runSkills(args, options = {}) {
-  try {
-    const result = spawnSync("npx", ["skills", ...args], {
-      encoding: "utf-8",
-      maxBuffer: 10 * 1024 * 1024,
-      timeout: 60_000,
-      shell: IS_WINDOWS,
-      ...options,
-    });
-    return {
-      stdout: result.stdout?.trim() ?? "",
-      stderr: result.stderr?.trim() ?? "",
-      exitCode: result.status ?? 1,
-    };
-  } catch (err) {
-    return { stdout: "", stderr: err.message, exitCode: 1 };
-  }
-}
-
-/**
- * Build a successful text result for the LLM.
- */
 function textResult(message) {
   return {
     content: [{ type: "text", text: message }],
   };
 }
 
-/**
- * Build an error result with isError flag per MCP protocol.
- */
 function errorResult(message) {
   return {
     isError: true,
@@ -352,115 +298,87 @@ const TOOLS = [
 // Tool handlers
 // ---------------------------------------------------------------------------
 
-function handleSearchSkills(args) {
-  const query = args.query ?? "";
-  if (!query.trim()) {
+async function handleSearchSkills(args) {
+  const query = (args.query ?? "").trim();
+  if (!query) {
     return errorResult("'query' parameter is required. Please provide search keywords (e.g. 'react testing', 'pr review').");
   }
-  const { stdout, stderr, exitCode } = runSkills(["find", query]);
-  if (exitCode !== 0 && !stdout) {
-    return errorResult(
-      `Search failed (exit ${exitCode}): ${stderr || "Unknown error. Verify that 'npx skills' is installed with: npm install -g skillsmp-cli"}`
-    );
+  try {
+    const results = await search(query);
+    return textResult(results);
+  } catch (err) {
+    return errorResult(`Search failed: ${err.message}`);
   }
-  const results = stdout || "No results found.";
-  return textResult(results);
 }
 
-function handleInstallSkill(args) {
+async function handleInstallSkill(args) {
   const pkg = args.package;
   if (!pkg) {
     return errorResult("'package' parameter is required. Provide a package identifier like 'vercel-labs/agent-skills'.");
   }
 
-  const cliArgs = ["add", pkg];
-  if (args.global) cliArgs.push("-g");
-  if (args.yes) cliArgs.push("-y");
-  if (args.all) cliArgs.push("--all");
-  if (args.copy) cliArgs.push("--copy");
-  if (args.skill) {
-    cliArgs.push("-s", args.skill);
+  try {
+    const result = await install(pkg, {
+      global: Boolean(args.global),
+      skill: args.all ? "*" : args.skill,
+      agent: args.agent,
+      copy: Boolean(args.copy),
+    });
+    return textResult(result);
+  } catch (err) {
+    return errorResult(`Install failed: ${err.message}`);
   }
-  if (args.agent) {
-    cliArgs.push("-a", args.agent);
-  }
-
-  const { stdout, stderr, exitCode } = runSkills(cliArgs);
-  if (exitCode !== 0) {
-    return errorResult(
-      `Install failed (exit ${exitCode}): ${stderr || stdout || "Unknown error. Check that the package name is correct and try again."}`
-    );
-  }
-  return textResult(stdout || `Skill "${pkg}" installed successfully.`);
 }
 
 function handleListInstalledSkills(args) {
-  const cliArgs = ["list", "--json"];
-  if (args.global) cliArgs.push("-g");
-  if (args.agent) cliArgs.push("-a", args.agent);
-
-  const { stdout, stderr, exitCode } = runSkills(cliArgs);
-  if (exitCode !== 0) {
-    return errorResult(
-      `List failed (exit ${exitCode}): ${stderr || stdout || "No skills are currently installed."}`
-    );
-  }
-
-  // Pretty-print JSON when possible
   try {
-    const data = JSON.parse(stdout);
-    return textResult(JSON.stringify(data, null, 2));
-  } catch {
-    return textResult(stdout || "No installed skills found.");
+    const json = listInstalled({
+      global: Boolean(args.global),
+      agent: args.agent,
+    });
+    return textResult(json);
+  } catch (err) {
+    return errorResult(`List failed: ${err.message}`);
   }
 }
 
 function handleRemoveSkill(args) {
-  const cliArgs = ["remove"];
-  if (args.skills?.length) cliArgs.push(...args.skills);
-  if (args.global) cliArgs.push("-g");
-  if (args.yes) cliArgs.push("-y");
-  if (args.all) cliArgs.push("--all");
-  if (args.agent) cliArgs.push("-a", args.agent);
-
-  const { stdout, stderr, exitCode } = runSkills(cliArgs);
-  if (exitCode !== 0) {
-    return errorResult(
-      `Remove failed (exit ${exitCode}): ${stderr || stdout || "Check the skill names and try again."}`
-    );
+  try {
+    const result = remove(args.skills || [], {
+      global: Boolean(args.global),
+      all: Boolean(args.all),
+      agent: args.agent,
+    });
+    return textResult(result);
+  } catch (err) {
+    return errorResult(`Remove failed: ${err.message}`);
   }
-  return textResult(stdout || "Skill(s) removed successfully.");
 }
 
-function handleUpdateSkills(args) {
-  const cliArgs = ["update"];
-  if (args.skills?.length) cliArgs.push(...args.skills);
-  if (args.global) cliArgs.push("-g");
-  if (args.project) cliArgs.push("-p");
-  if (args.yes) cliArgs.push("-y");
-
-  const { stdout, stderr, exitCode } = runSkills(cliArgs);
-  if (exitCode !== 0) {
-    return errorResult(
-      `Update failed (exit ${exitCode}): ${stderr || stdout || "Check that skills are installed and try again."}`
-    );
+async function handleUpdateSkills(args) {
+  try {
+    const result = await update(args.skills || [], {
+      global: Boolean(args.global),
+      project: Boolean(args.project),
+    });
+    return textResult(result);
+  } catch (err) {
+    return errorResult(`Update failed: ${err.message}`);
   }
-  return textResult(stdout || "Skills updated successfully.");
 }
 
-function handleListPackageSkills(args) {
+async function handleListPackageSkills(args) {
   const pkg = args.package;
   if (!pkg) {
     return errorResult("'package' parameter is required. Provide a package identifier like 'vercel-labs/agent-skills'.");
   }
 
-  const { stdout, stderr, exitCode } = runSkills(["add", pkg, "-l"]);
-  if (exitCode !== 0) {
-    return errorResult(
-      `List failed (exit ${exitCode}): ${stderr || stdout || "Check that the package exists and try again."}`
-    );
+  try {
+    const result = await listPackageSkills(pkg);
+    return textResult(result);
+  } catch (err) {
+    return errorResult(`List failed: ${err.message}`);
   }
-  return textResult(stdout || "No skills found in this package.");
 }
 
 // ---------------------------------------------------------------------------
@@ -479,7 +397,6 @@ const server = new Server(
   }
 );
 
-// ListTools — includes annotations for MCP best practices
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: TOOLS.map(({ annotations, outputSchema, ...rest }) => ({
     ...rest,
@@ -488,7 +405,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   })),
 }));
 
-// CallTool
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
@@ -524,8 +440,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // ---------------------------------------------------------------------------
 
 async function main() {
-  // Verify dependencies before starting
-  checkDependencies();
+  console.error("skillsmp-mcp starting on stdio (self-contained, no CLI dependency)");
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

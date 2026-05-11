@@ -1,8 +1,7 @@
 /**
- * Unit tests for setup.js configuration correctness.
+ * Unit tests for setup.js configuration and index.js structure.
  *
- * These tests read setup.js as source text and verify structural elements
- * without executing the script (which has side effects).
+ * These tests verify structural elements without executing scripts with side effects.
  */
 
 import { describe, it, expect } from "vitest";
@@ -38,7 +37,6 @@ describe("setup.js — configuration verification", () => {
   });
 
   it("should use let for doLocal and doGlobal (not const)", () => {
-    // Find the declarations
     const localMatch = source.match(/(let|const)\s+doLocal/);
     const globalMatch = source.match(/(let|const)\s+doGlobal/);
     expect(localMatch?.[1]).toBe("let");
@@ -51,24 +49,20 @@ describe("setup.js — configuration verification", () => {
   });
 });
 
-describe("index.js — security verification", () => {
+describe("index.js — structure verification", () => {
   let source;
   beforeAll(() => {
     source = readFileSync(INDEX_PATH, "utf-8");
   });
 
-  it("should use spawnSync instead of execSync", () => {
-    expect(source).not.toContain("execSync");
-    expect(source).toContain("spawnSync");
+  it("should import from self-contained src/ modules", () => {
+    expect(source).toContain("./src/registry.js");
+    expect(source).toContain("./src/installer.js");
   });
 
-  it("should not have shell injection via string concatenation", () => {
-    // Verify spawnSync is called with separate args array
-    const spawnCall = source.match(/spawnSync\([^)]+\)/g);
-    expect(spawnCall).toBeTruthy();
-    // Check no spawnSync calls use shell:true
-    expect(source).not.toContain("shell: true");
-    expect(source).not.toContain("shell:true");
+  it("should not import from non-existent CLI", () => {
+    expect(source).not.toContain("npx skills");
+    expect(source).not.toContain("skillsmp-cli");
   });
 
   it("should define all 6 MCP tools", () => {
@@ -83,5 +77,12 @@ describe("index.js — security verification", () => {
     for (const name of toolNames) {
       expect(source).toContain(name);
     }
+  });
+
+  it("should have async tool handlers for network operations", () => {
+    expect(source).toContain("async function handleSearchSkills");
+    expect(source).toContain("async function handleInstallSkill");
+    expect(source).toContain("async function handleUpdateSkills");
+    expect(source).toContain("async function handleListPackageSkills");
   });
 });

@@ -22,6 +22,9 @@ import {
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import { spawnSync } from "node:child_process";
+import { platform } from "node:os";
+
+const IS_WINDOWS = platform() === "win32";
 
 // ---------------------------------------------------------------------------
 // Startup health check
@@ -32,6 +35,7 @@ function checkDependencies() {
     const result = spawnSync("npx", ["skills", "--version"], {
       encoding: "utf-8",
       timeout: 15_000,
+      shell: IS_WINDOWS,
     });
     if (result.error || result.status !== 0) {
       console.error(
@@ -63,6 +67,7 @@ function runSkills(args, options = {}) {
       encoding: "utf-8",
       maxBuffer: 10 * 1024 * 1024,
       timeout: 60_000,
+      shell: IS_WINDOWS,
       ...options,
     });
     return {
